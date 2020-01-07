@@ -37,8 +37,8 @@ def get_sys_args():
 
 
 def get_file_path(data, index_date):
-    # Example:  BHTN\20190901\RETRO01D\20190901.BHTN.RETRO01D.zip
-    return (f"./{data['facility_dir']}/{index_date}/{data['file_type']}{data['file_version']}" +
+    # Example:  BHTN\20190901\20190901.BHTN.RETRO01D.zip
+    return (f"./{data['facility_dir']}/{index_date}" +
             f"/{index_date}.{data['facility_dir']}.{data['file_type']}{data['file_version']}.zip")
 
 
