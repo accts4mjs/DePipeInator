@@ -14,7 +14,7 @@ def get_sys_args():
     args = {}
 
     if len(sys.argv) < NUM_ARGS:
-        print("ERROR: expected " + str(NUM_ARGS - 1) + " args got " + str(len(sys.argv)))
+        print("ERROR: expected " + str(NUM_ARGS - 1) + " args got " + str(len(sys.argv) - 1))
         print(USAGE_STRING)
         exit(-1)
 
