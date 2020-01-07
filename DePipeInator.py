@@ -53,8 +53,8 @@ def cleanup_file(remove_char, zip_file_name, outfile):
     output.write(HEADER_STRING)
 
     for line in input:
-        if line[-1] == remove_char:
-            output.write(line[:-1])
+        if line[-2] == remove_char:
+            output.write(f"{line[:-2]}\n")
         else:
             output.write(line)
 
