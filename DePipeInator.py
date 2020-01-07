@@ -1,6 +1,7 @@
 import sys
 import os
 import zipfile
+import bz2
 
 NUM_ARGS = 7  # Includes script name
 USAGE_STRING = ("Usage:  DePipeInator <facility (dir)> <file type> <file version> <start date> " +
@@ -135,15 +136,15 @@ def main_function():
             revert_orig_file(original_file_path)
             continue
 
-        with zipfile.ZipFile(os.path.basename(original_file_path), 'w') as zip:
-            try:
+        try:
+            with zipfile.ZipFile(os.path.basename(original_file_path), 'w', compression = zipfile.ZIP_BZIP2) as zip:
                 zip.write(os.path.basename(original_unzipped_file_path))
-            except:
-                print("{} FAIL - unable to zip new file".format(original_file_path))
-                os.chdir(curr_path)
-                cleanup_temp_files(files_to_remove)
-                revert_orig_file(original_file_path)
-                continue
+        except:
+            print("{} FAIL - unable to zip new file".format(original_file_path))
+            os.chdir(curr_path)
+            cleanup_temp_files(files_to_remove)
+            revert_orig_file(original_file_path)
+            continue
         try:
             os.chdir(curr_path)
         except:
