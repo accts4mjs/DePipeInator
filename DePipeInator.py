@@ -6,6 +6,7 @@ NUM_ARGS = 7
 USAGE_STRING = ("Usage:  DePipeInator <facility (dir)> <file type> <file version> <start date> " +
                 "<end date> <trailing char to remove>\n" +
                 "\tEx:  DePipeInator BHTN RETRO 01D 20190901 20190903 |")
+HEADER_STRING = "Header line - ignore\n"
 
 
 def get_sys_args():
@@ -41,6 +42,25 @@ def get_file_path(data, index_date):
             f"/{index_date}.{data['facility_dir']}.{data['file_type']}{data['file_version']}.zip")
 
 
+def cleanup_file(remove_char, zip_file_name, outfile):
+    if not os.path.isfile(zip_file_name):
+        return False
+
+    input = open(zip_file_name, "r")
+    output = open(outfile, "w")
+
+    # Add the header then read in each line and remove the trailing char if it's there
+    output.write(HEADER_STRING)
+
+    for line in input:
+        if line[-1] == remove_char:
+            output.write(line[:-1])
+        else:
+            output.write(line)
+
+    return True
+
+
 def main_function():
     arg_set = get_sys_args()
     print(arg_set)
@@ -55,11 +75,19 @@ def main_function():
             print("{} FAIL - missing file".format(file_path))
             continue
 
-        # Test unzipping the file
+        # Unzip the file
         with zipfile.ZipFile(file_path, 'r') as zip:
-            zip.printdir()
+            try:
+                zip.extractall(os.path.dirname(file_path))
+            except:
+                print("{} FAIL - unable to unzip".format(file_path))
+                continue
 
-        print("{} PASS".format(file_path))
+        base_file_path = file_path.replace(".zip", "")
+        if cleanup_file(arg_set['trailing_char'], base_file_path, f"{base_file_path}.out"):
+            print("{} PASS".format(file_path))
+        else:
+            print("{} FAIL - cleanup error")
 
     return 0
 
