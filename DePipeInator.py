@@ -87,7 +87,7 @@ def main_function():
         if cleanup_file(arg_set['trailing_char'], base_file_path, f"{base_file_path}.out"):
             print("{} PASS".format(file_path))
         else:
-            print("{} FAIL - cleanup error")
+            print("{} FAIL - cleanup error".format(file_path))
 
     return 0
 
