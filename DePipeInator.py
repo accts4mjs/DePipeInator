@@ -112,7 +112,7 @@ def main_function():
             os.rename(original_file_path, f"{original_file_path}.orig")
             os.rename(original_unzipped_file_path, f"{original_unzipped_file_path}.orig")
         except:
-            print("{} FAIL - unable to rename original files")
+            print("{} FAIL - unable to rename original files".format(original_file_path))
             cleanup_temp_files(files_to_remove)
             revert_orig_file(original_file_path)
             continue
@@ -144,7 +144,13 @@ def main_function():
                 cleanup_temp_files(files_to_remove)
                 revert_orig_file(original_file_path)
                 continue
-        os.chdir(curr_path)
+        try:
+            os.chdir(curr_path)
+        except:
+            # NOTE: If chdir back to original dir fails then we have a critical error and should abort
+            print("{} FAIL - CRITICAL ERROR, unable to chdir to {} the previous path.  Aborting.  No cleanup.".format(original_file_path, curr_path))
+            exit(-1)
+
         cleanup_temp_files(files_to_remove)  # Do not revert orig file as new file is now in place
         print("{} PASS".format(original_file_path))
 
