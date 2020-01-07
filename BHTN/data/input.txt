@@ -1,0 +1,7 @@
+this line has no pipe
+this line has a pipe at the end|
+this line has a | pipe in the middle
+this line has a | pipe in the middle and the end|
+|this line starts with a pipe
+|this line starts with a pipe and ends with a pipe|
+|this line starts with a pipe | has one in the middle, and ends with a pipe|
