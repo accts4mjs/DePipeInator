@@ -5,10 +5,11 @@ from datetime import timedelta, date
 
 NUM_ARGS = [7, 8]  # Includes script name
 USAGE_STRING = ("Usage:  UnDePipeInator <facility (dir)> <file type> <file version> <start date> " +
-                "<end date> <-r <trailing char to remove>| -u> \n" +
-                "\t-r = remove trailing char - char must be provided" +
-                "\t-u = undo by removing new file and renaming .orig file to original" +
-                "\tEx:  DePipeInator BHTN RETRO 01D 20190901 20190903 |")
+                "<end date> <-r <trailing char to remove>| -u>\n" +
+                "\t-r = remove trailing char - char must be provided\n" +
+                "\t-u = undo by removing new file and renaming .orig file to original\n" +
+                "\tEx:  DePipeInator BHTN RETRO 01D 20190901 20190903 -r '|'\n" +
+                "\tEx:  DePipeInator BHTN COLLECT 01D 20190901 20190903 -u")
 HEADER_STRING = "# Header line - ignore\n"
 STATE_REMOVE = 0
 STATE_UNDO = 1
@@ -19,7 +20,7 @@ def convert_to_date(date_str):
     if len(date_str) != 8:
         print(f"ERROR: {sys.argv[4]} invalid date format.  Should be YYYYMMDD")
         print(USAGE_STRING)
-        exit(-1)
+        exit(0)
     year = int(date_str[0:4])
     month = int(date_str[4:6])
     day = int(date_str[6:8])
@@ -28,7 +29,7 @@ def convert_to_date(date_str):
     except ValueError:
         print(f"ERROR: {sys.argv[4]} invalid date format.  Should be YYYYMMDD")
         print(USAGE_STRING)
-        exit(-1)
+        exit(0)
 
     return result_date
 
@@ -40,13 +41,13 @@ def get_sys_args():
     if len(sys.argv) not in NUM_ARGS:
         print("ERROR: unexpected # of args")
         print(USAGE_STRING)
-        exit(-1)
+        exit(0)
 
     args['facility_dir'] = sys.argv[1]
     if not os.path.isdir(args['facility_dir']):
         print("ERROR: " + args['facility_dir'] + " not a valid facility dir")
         print(USAGE_STRING)
-        exit(-1)
+        exit(0)
     args['file_type'] = sys.argv[2]
     args['file_version'] = sys.argv[3]
     args['start_date'] = convert_to_date(sys.argv[4])
@@ -57,13 +58,13 @@ def get_sys_args():
         if len(args['trailing_char']) > 1:
             print("ERROR: '" + args['trailing_char'] + "' not a single char")
             print(USAGE_STRING)
-            exit(-1)
+            exit(0)
     elif sys.argv[6] == "-u":
         args['function'] = STATE_UNDO
     else:
         print("ERROR: wrong functional option.  Should be -r or -u")
         print(USAGE_STRING)
-        exit(-1)
+        exit(0)
 
     return args
 
@@ -188,7 +189,7 @@ def run_remove_trailing_char(arg_set):
         except:
             # NOTE: If chdir back to original dir fails then we have a critical error and should abort
             print("{} FAIL - CRITICAL ERROR, unable to chdir to {} the previous path.  Aborting.  No cleanup.".format(original_file_path, curr_path))
-            exit(-1)
+            exit(0)
 
         cleanup_temp_files(files_to_remove)  # Do not revert orig file as new file is now in place
         print("{} PASS".format(original_file_path))
