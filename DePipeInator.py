@@ -1,12 +1,25 @@
 import sys
 import os
 import zipfile
+from datetime import timedelta, date
 
 NUM_ARGS = 7  # Includes script name
 USAGE_STRING = ("Usage:  DePipeInator <facility (dir)> <file type> <file version> <start date> " +
                 "<end date> <trailing char to remove>\n" +
                 "\tEx:  DePipeInator BHTN RETRO 01D 20190901 20190903 |")
 HEADER_STRING = "# Header line - ignore\n"
+
+
+def convert_to_date(date_str):
+    # Dates need to be in YYYYMMDD format
+    if len(date_str) != 8:
+        print(f"ERROR: {sys.argv[4]} invalid date format.  Should be YYYYMMDD")
+        print(USAGE_STRING)
+        exit(-1)
+    year = int(date_str[0:4])
+    month = int(date_str[4:6])
+    day = int(date_str[6:8])
+    return date(year, month, day)
 
 
 def get_sys_args():
@@ -25,8 +38,8 @@ def get_sys_args():
         exit(-1)
     args['file_type'] = sys.argv[2]
     args['file_version'] = sys.argv[3]
-    args['start_date'] = sys.argv[4]
-    args['stop_date'] = sys.argv[5]
+    args['start_date'] = convert_to_date(sys.argv[4])
+    args['stop_date'] = convert_to_date(sys.argv[5])
     args['trailing_char'] = sys.argv[6]
     if len(args['trailing_char']) > 1:
         print("ERROR: '" + args['trailing_char'] + "' not a single char")
@@ -80,15 +93,24 @@ def revert_orig_file(orig_file):
         return  # Silent fail
 
 
+def date_time_iterator(from_date, to_date):
+    if from_date > to_date:
+        return
+    else:
+        while from_date <= to_date:
+            yield from_date
+            from_date = from_date + timedelta(days = 1)
+        return
+
+
 def main_function():
     arg_set = get_sys_args()
 
-    start_date = int(arg_set['start_date'])
-    stop_date = int(arg_set['stop_date'])
+    for index_date in date_time_iterator(arg_set['start_date'], arg_set['stop_date']):
+        index_str = str(index_date).replace("-", "")
 
-    for index_date in range(start_date, stop_date + 1):
         files_to_remove = []
-        original_file_path = get_file_path(arg_set, index_date)
+        original_file_path = get_file_path(arg_set, index_str)
         original_unzipped_file_path = original_file_path.replace(".zip", "")
 
         if not os.path.isfile(original_file_path):
