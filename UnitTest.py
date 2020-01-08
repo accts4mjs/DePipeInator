@@ -3,15 +3,13 @@ import os
 import zipfile
 from datetime import timedelta, date
 
-NUM_ARGS = [7, 8]  # Includes script name
+NUM_ARGS = 7  # Includes script name
 USAGE_STRING = ("Usage:  UnDePipeInator <facility (dir)> <file type> <file version> <start date> " +
-                "<end date> <-r <trailing char to remove>| -u> \n" +
-                "\t-r = remove trailing char - char must be provided" +
-                "\t-u = undo by removing new file and renaming .orig file to original" +
+                "<end date> <-r | -u> <trailing char to remove>\n" +
+                "\t-r = 
+                "\t-u = undo by " +"
                 "\tEx:  DePipeInator BHTN RETRO 01D 20190901 20190903 |")
 HEADER_STRING = "# Header line - ignore\n"
-STATE_REMOVE = 0
-STATE_UNDO = 1
 
 
 def convert_to_date(date_str):
@@ -23,7 +21,7 @@ def convert_to_date(date_str):
     year = int(date_str[0:4])
     month = int(date_str[4:6])
     day = int(date_str[6:8])
-    try:  # Test that date is valid
+    try:
         result_date = date(year, month, day)
     except ValueError:
         print(f"ERROR: {sys.argv[4]} invalid date format.  Should be YYYYMMDD")
@@ -37,8 +35,8 @@ def get_sys_args():
     # Usage:  DePipeInator <facility (dir)> <file type> <file version> <start date> <end date> <trailing char to rm>
     args = {}
 
-    if len(sys.argv) not in NUM_ARGS:
-        print("ERROR: unexpected # of args")
+    if len(sys.argv) < NUM_ARGS:
+        print("ERROR: expected " + str(NUM_ARGS - 1) + " args got " + str(len(sys.argv) - 1))
         print(USAGE_STRING)
         exit(-1)
 
@@ -51,17 +49,9 @@ def get_sys_args():
     args['file_version'] = sys.argv[3]
     args['start_date'] = convert_to_date(sys.argv[4])
     args['stop_date'] = convert_to_date(sys.argv[5])
-    if sys.argv[6] == "-r":
-        args['function'] = STATE_REMOVE
-        args['trailing_char'] = sys.argv[7]
-        if len(args['trailing_char']) > 1:
-            print("ERROR: '" + args['trailing_char'] + "' not a single char")
-            print(USAGE_STRING)
-            exit(-1)
-    elif sys.argv[6] == "-u":
-        args['function'] = STATE_UNDO
-    else:
-        print("ERROR: wrong functional option.  Should be -r or -u")
+    args['trailing_char'] = sys.argv[6]
+    if len(args['trailing_char']) > 1:
+        print("ERROR: '" + args['trailing_char'] + "' not a single char")
         print(USAGE_STRING)
         exit(-1)
 
@@ -122,7 +112,9 @@ def date_time_iterator(from_date, to_date):
         return
 
 
-def run_remove_trailing_char(arg_set):
+def main_function():
+    arg_set = get_sys_args()
+
     for index_date in date_time_iterator(arg_set['start_date'], arg_set['stop_date']):
         index_str = str(index_date).replace("-", "")
 
@@ -175,7 +167,7 @@ def run_remove_trailing_char(arg_set):
             continue
 
         try:
-            with zipfile.ZipFile(os.path.basename(original_file_path), 'w', compression = zipfile.ZIP_DEFLATED) as zip:
+            with zipfile.ZipFile(os.path.basename(original_file_path), 'w', compression = zipfile.ZIP_BZIP2) as zip:
                 zip.write(os.path.basename(original_unzipped_file_path))
         except:
             print("{} FAIL - unable to zip new file".format(original_file_path))
@@ -194,48 +186,6 @@ def run_remove_trailing_char(arg_set):
         print("{} PASS".format(original_file_path))
 
     return 0
-
-
-def run_undo(arg_set):
-    for index_date in date_time_iterator(arg_set['start_date'], arg_set['stop_date']):
-        index_str = str(index_date).replace("-", "")
-
-        current_file_path = get_file_path(arg_set, index_str)
-        original_file_path = current_file_path.replace(".zip", ".zip.orig")
-
-        # Both files should be present.  If .orig missing, stop.  If .zip missing but .orig available, okay to restore
-        if not os.path.isfile(original_file_path):
-            print("{} FAIL - missing .orig file".format(current_file_path))
-            continue
-
-        if os.path.isfile(current_file_path):
-            # Remove the current .zip file
-            try:
-                os.remove(current_file_path)
-            except:
-                print(f"{current_file_path} FAIL - unable to remove current .zip file.")
-                continue
-
-        # Move .orig file back
-        try:
-            os.rename(original_file_path, current_file_path)
-        except:
-            print(f"{current_file_path} FAIL - unable to rename .orig file")
-            continue
-
-        print(f"{current_file_path} PASS")
-
-    return 0
-
-
-def main_function():
-    arg_set = get_sys_args()
-    if arg_set['function'] == STATE_REMOVE:
-        return run_remove_trailing_char(arg_set)
-    elif arg_set['function'] == STATE_UNDO:
-        return run_undo(arg_set)
-    else:
-        return -1
 
 
 main_function()
