@@ -1,7 +1,6 @@
 import sys
 import os
 import zipfile
-import bz2
 
 NUM_ARGS = 7  # Includes script name
 USAGE_STRING = ("Usage:  DePipeInator <facility (dir)> <file type> <file version> <start date> " +
@@ -48,7 +47,7 @@ def remove_trailing_char(remove_char, zip_file_name, outfile):
         return False
 
     input = open(zip_file_name, "r")
-    output = open(outfile, "w")
+    output = open(outfile, "w", newline='\n')
 
     # Add the header then read in each line and remove the trailing char if it's there
     output.write(HEADER_STRING)
