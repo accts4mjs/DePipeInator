@@ -4,8 +4,9 @@ import zipfile
 from datetime import timedelta, date
 
 NUM_ARGS = [8, 9, 10]  # Includes script name
-USAGE_STRING = ("Usage:  UnDePipeInator <facility (dir)> <file type> <file version> <suffix> <start date> " +
-                "<end date> <-r <trailing char to remove> | -a <field name> <position> | -u>\n" +
+USAGE_STRING = ("Usage:  DePipeInator <facility (dir)> <file type> <file version> <suffix> <start date> " +
+                "<end date> <-m | -r <trailing char to remove> | -a <field name> <position> | -u>\n" +
+                "\t-m = scan range of directories for missing files\n" +
                 "\t-r = remove trailing char - char must be provided\n" +
                 "\t-u = undo by removing new file and renaming .orig file to original\n" +
                 "\t-a = add extra field name in a specific position to file in zip and zip name\n" +
@@ -18,6 +19,7 @@ HEADER_STRING = "# Header line - ignore\n"
 STATE_REMOVE = 0
 STATE_UNDO = 1
 STATE_ADD = 2
+STATE_MISSING = 3
 
 
 def convert_to_date(date_str):
@@ -60,7 +62,9 @@ def get_sys_args():
     args['suffix'] = sys.argv[4]
     args['start_date'] = convert_to_date(sys.argv[5])
     args['stop_date'] = convert_to_date(sys.argv[6])
-    if sys.argv[7] == "-u":
+    if num_args == 8 and sys.argv[7] == "-m":
+        args['function'] = STATE_MISSING
+    elif num_args == 8 and sys.argv[7] == "-u":
         args['function'] = STATE_UNDO
     elif num_args == 9 and sys.argv[7] == "-r":  # Make sure you have enough args
         args['function'] = STATE_REMOVE
@@ -78,7 +82,7 @@ def get_sys_args():
             print(USAGE_STRING)
             exit(0)
     else:
-        print("ERROR: wrong functional option.  Should be -r or -u")
+        print("ERROR: wrong syntax")
         print(USAGE_STRING)
         exit(0)
 
@@ -338,6 +342,20 @@ def add_field_to_name(arg_set):
     return 0
 
 
+def check_for_missing_files(arg_set):
+    for index_date in date_time_iterator(arg_set['start_date'], arg_set['stop_date']):
+        index_str = str(index_date).replace("-", "")
+
+        file_path = get_file_path(arg_set, index_str)
+
+        if not os.path.isfile(file_path):
+            print(f"{file_path} FAIL - missing file")
+        else:
+            print(f"{file_path} PASS")
+
+    return 0
+
+
 def main_function():
     arg_set = get_sys_args()
     if arg_set['function'] == STATE_REMOVE:
@@ -346,6 +364,8 @@ def main_function():
         return run_undo(arg_set)
     elif arg_set['function'] == STATE_ADD:
         return add_field_to_name(arg_set)
+    elif arg_set['function'] == STATE_MISSING:
+        return check_for_missing_files(arg_set)
     else:
         return -1
 
