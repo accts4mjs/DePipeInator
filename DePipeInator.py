@@ -3,12 +3,14 @@ import os
 import zipfile
 from datetime import timedelta, date
 
-NUM_ARGS = [7, 8, 9]  # Includes script name
-USAGE_STRING = ("Usage:  UnDePipeInator <facility (dir)> <file type> <file version> <start date> " +
+NUM_ARGS = [8, 9, 10]  # Includes script name
+USAGE_STRING = ("Usage:  UnDePipeInator <facility (dir)> <file type> <file version> <suffix> <start date> " +
                 "<end date> <-r <trailing char to remove> | -a <field name> <position> | -u>\n" +
                 "\t-r = remove trailing char - char must be provided\n" +
                 "\t-u = undo by removing new file and renaming .orig file to original\n" +
-                "\t-a = add extra field name in a specific position to file in zip and zip name\n"
+                "\t-a = add extra field name in a specific position to file in zip and zip name\n" +
+                "\t\tNOTE: position starts at 0.  Ex: A.B.C  A=0, B=1, C=2"
+                "\tNOTE: <suffix> can be an empty char ''"
                 "\tEx:  DePipeInator BHTN RETRO 01D 20190901 20190903 -r '|'\n" +
                 "\tEx:  DePipeInator BHTN COLLECT 01D 20190901 20190903 -u" +
                 "\tEx:  DePipeInator BHTN PMTS 01D 20190901 20190903 -a HIST 3")
@@ -55,21 +57,26 @@ def get_sys_args():
         exit(0)
     args['file_type'] = sys.argv[2]
     args['file_version'] = sys.argv[3]
-    args['start_date'] = convert_to_date(sys.argv[4])
-    args['stop_date'] = convert_to_date(sys.argv[5])
-    if sys.argv[6] == "-u":
+    args['suffix'] = sys.argv[4]
+    args['start_date'] = convert_to_date(sys.argv[5])
+    args['stop_date'] = convert_to_date(sys.argv[6])
+    if sys.argv[7] == "-u":
         args['function'] = STATE_UNDO
-    elif num_args == 8 and sys.argv[6] == "-r":  # Make sure you have enough args
+    elif num_args == 9 and sys.argv[7] == "-r":  # Make sure you have enough args
         args['function'] = STATE_REMOVE
-        args['trailing_char'] = sys.argv[7]
+        args['trailing_char'] = sys.argv[8]
         if len(args['trailing_char']) > 1:
             print("ERROR: '" + args['trailing_char'] + "' not a single char")
             print(USAGE_STRING)
             exit(0)
-    elif num_args == 9 and sys.argv[6] == "-a":  # Make sure you have enough args
+    elif num_args == 10 and sys.argv[7] == "-a":  # Make sure you have enough args
         args['function'] = STATE_ADD
-        args['field_name'] = sys.argv[7]
-        args['field_position'] = int(sys.argv[8])
+        args['field_name'] = sys.argv[8]
+        args['field_position'] = int(sys.argv[9])
+        if args['field_position'] < 0:
+            print("ERROR: '" + args['field_position'] + "' not a valid position")
+            print(USAGE_STRING)
+            exit(0)
     else:
         print("ERROR: wrong functional option.  Should be -r or -u")
         print(USAGE_STRING)
@@ -79,9 +86,14 @@ def get_sys_args():
 
 
 def get_file_path(data, index_date):
-    # Example:  BHTN\20190901\20190901.BHTN.RETRO01D.zip
-    return (f"./{data['facility_dir']}/{index_date}" +
-            f"/{index_date}.{data['facility_dir']}.{data['file_type']}{data['file_version']}.zip")
+    # Example:  BHTN\20190901\20190901.BHTN.RETRO01D.zip or BHTN\20190901\20190901.BHTN.PMTS01D.TXT.zip
+    if data['suffix'] != "":
+        return (f"./{data['facility_dir']}/{index_date}" +
+                f"/{index_date}.{data['facility_dir']}.{data['file_type']}{data['file_version']}." +
+                f"{data['suffix']}.zip")
+    else:
+        return (f"./{data['facility_dir']}/{index_date}" +
+                f"/{index_date}.{data['facility_dir']}.{data['file_type']}{data['file_version']}.zip")
 
 
 def remove_trailing_char(remove_char, zip_file_name, outfile):
@@ -238,9 +250,95 @@ def run_undo(arg_set):
     return 0
 
 
-def add_field_to_name(arg_set):
-    return 0
+def get_file_path_add_field(data, index_date):
+    # Original file path Ex:  BHTN\20190901\20190901.BHTN.RETRO01D.zip
+    # Field gets added in the basename.  Positions are 0 based and separated by a period.
+    base_path = f"./{data['facility_dir']}/{index_date}/"
+    if data['suffix'] != "":
+        name_list = [str(index_date), data['facility_dir'], f"{data['file_type']}{data['file_version']}",
+                     data['suffix']]
+    else:
+        name_list = [str(index_date), data['facility_dir'], f"{data['file_type']}{data['file_version']}"]
+    name_list.insert(data['field_position'], data['field_name'])
+    delimiter = "."
+    return base_path + delimiter.join(name_list) + ".zip"
 
+
+def add_field_to_name(arg_set):
+    for index_date in date_time_iterator(arg_set['start_date'], arg_set['stop_date']):
+        index_str = str(index_date).replace("-", "")
+
+        files_to_remove = []
+        original_file_path = get_file_path(arg_set, index_str)
+        original_unzipped_file_path = original_file_path.replace(".zip", "")
+        new_file_path = get_file_path_add_field(arg_set, index_str)
+        new_unzipped_file_path = new_file_path.replace(".zip", "")
+
+        if not os.path.isfile(original_file_path):
+            # print("ERROR: file '{}' not found".format(file_path), file=sys.stderr)
+            print("{} FAIL - missing original file".format(original_file_path))
+            continue
+
+        # Unzip the original file
+        with zipfile.ZipFile(original_file_path, 'r') as zip:
+            files_to_remove.append(original_unzipped_file_path)
+            try:
+                zip.extractall(os.path.dirname(original_file_path))
+            except:
+                print("{} FAIL - unable to unzip original file".format(original_file_path))
+                cleanup_temp_files(files_to_remove)
+                continue
+
+        # Rename original zip file to save in case need to revert
+        # Rename extracted file to new file name
+        files_to_remove.append(f"{original_unzipped_file_path}.orig")
+        try:
+            os.rename(original_file_path, f"{original_file_path}.orig")
+            os.rename(original_unzipped_file_path, f"{original_unzipped_file_path}.orig")
+        except:
+            print("{} FAIL - unable to rename original files".format(original_file_path))
+            cleanup_temp_files(files_to_remove)
+            revert_orig_file(original_file_path)
+            continue
+
+        if not remove_trailing_char(arg_set['trailing_char'], f"{original_unzipped_file_path}.orig", original_unzipped_file_path):
+            print("{} FAIL - cleanup error".format(original_file_path))
+            cleanup_temp_files(files_to_remove)
+            revert_orig_file(original_file_path)
+            continue
+
+        # Zip new file and remove temp files (both new and original but leave original zip)
+        # NOTE:  Need to chdir to path of zip file otherwise new zip file doesn't contain just the file it contains the
+        #       full path to the file inside the zip (not desired).
+        curr_path = os.path.abspath(".")
+        try:
+            os.chdir(os.path.dirname(original_file_path))
+        except:
+            print("{} FAIL - unable to chdir to zip file dir".format(original_file_path))
+            cleanup_temp_files(files_to_remove)
+            revert_orig_file(original_file_path)
+            continue
+
+        try:
+            with zipfile.ZipFile(os.path.basename(original_file_path), 'w', compression = zipfile.ZIP_DEFLATED) as zip:
+                zip.write(os.path.basename(original_unzipped_file_path))
+        except:
+            print("{} FAIL - unable to zip new file".format(original_file_path))
+            os.chdir(curr_path)
+            cleanup_temp_files(files_to_remove)
+            revert_orig_file(original_file_path)
+            continue
+        try:
+            os.chdir(curr_path)
+        except:
+            # NOTE: If chdir back to original dir fails then we have a critical error and should abort
+            print("{} FAIL - CRITICAL ERROR, unable to chdir to {} the previous path.  Aborting.  No cleanup.".format(original_file_path, curr_path))
+            exit(0)
+
+        cleanup_temp_files(files_to_remove)  # Do not revert orig file as new file is now in place
+        print("{} PASS".format(original_file_path))
+
+    return 0
 
 def main_function():
     arg_set = get_sys_args()
