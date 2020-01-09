@@ -3,19 +3,23 @@ import os
 import zipfile
 from datetime import timedelta, date
 
-NUM_ARGS = [7, 8]  # Includes script name
+NUM_ARGS = [7, 8, 9]  # Includes script name
 USAGE_STRING = ("Usage:  UnDePipeInator <facility (dir)> <file type> <file version> <start date> " +
-                "<end date> <-r <trailing char to remove>| -u>\n" +
+                "<end date> <-r <trailing char to remove> | -a <field name> <position> | -u>\n" +
                 "\t-r = remove trailing char - char must be provided\n" +
                 "\t-u = undo by removing new file and renaming .orig file to original\n" +
+                "\t-a = add extra field name in a specific position to file in zip and zip name\n"
                 "\tEx:  DePipeInator BHTN RETRO 01D 20190901 20190903 -r '|'\n" +
-                "\tEx:  DePipeInator BHTN COLLECT 01D 20190901 20190903 -u")
+                "\tEx:  DePipeInator BHTN COLLECT 01D 20190901 20190903 -u" +
+                "\tEx:  DePipeInator BHTN PMTS 01D 20190901 20190903 -a HIST 3")
 HEADER_STRING = "# Header line - ignore\n"
 STATE_REMOVE = 0
 STATE_UNDO = 1
+STATE_ADD = 2
 
 
 def convert_to_date(date_str):
+    result_date = None
     # Dates need to be in YYYYMMDD format
     if len(date_str) != 8:
         print(f"ERROR: {sys.argv[4]} invalid date format.  Should be YYYYMMDD")
@@ -37,8 +41,9 @@ def convert_to_date(date_str):
 def get_sys_args():
     # Usage:  DePipeInator <facility (dir)> <file type> <file version> <start date> <end date> <trailing char to rm>
     args = {}
+    num_args = len(sys.argv)
 
-    if len(sys.argv) not in NUM_ARGS:
+    if num_args not in NUM_ARGS:
         print("ERROR: unexpected # of args")
         print(USAGE_STRING)
         exit(0)
@@ -52,15 +57,19 @@ def get_sys_args():
     args['file_version'] = sys.argv[3]
     args['start_date'] = convert_to_date(sys.argv[4])
     args['stop_date'] = convert_to_date(sys.argv[5])
-    if sys.argv[6] == "-r":
+    if sys.argv[6] == "-u":
+        args['function'] = STATE_UNDO
+    elif num_args == 8 and sys.argv[6] == "-r":  # Make sure you have enough args
         args['function'] = STATE_REMOVE
         args['trailing_char'] = sys.argv[7]
         if len(args['trailing_char']) > 1:
             print("ERROR: '" + args['trailing_char'] + "' not a single char")
             print(USAGE_STRING)
             exit(0)
-    elif sys.argv[6] == "-u":
-        args['function'] = STATE_UNDO
+    elif num_args == 9 and sys.argv[6] == "-a":  # Make sure you have enough args
+        args['function'] = STATE_ADD
+        args['field_name'] = sys.argv[7]
+        args['field_position'] = int(sys.argv[8])
     else:
         print("ERROR: wrong functional option.  Should be -r or -u")
         print(USAGE_STRING)
@@ -229,12 +238,18 @@ def run_undo(arg_set):
     return 0
 
 
+def add_field_to_name(arg_set):
+    return 0
+
+
 def main_function():
     arg_set = get_sys_args()
     if arg_set['function'] == STATE_REMOVE:
         return run_remove_trailing_char(arg_set)
     elif arg_set['function'] == STATE_UNDO:
         return run_undo(arg_set)
+    elif arg_set['function'] == STATE_ADD:
+        return add_field_to_name(arg_set)
     else:
         return -1
 
