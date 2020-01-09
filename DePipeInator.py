@@ -140,7 +140,7 @@ def date_time_iterator(from_date, to_date):
     else:
         while from_date <= to_date:
             yield from_date
-            from_date = from_date + timedelta(days = 1)
+            from_date = from_date + timedelta(days=1)
         return
 
 
@@ -158,10 +158,10 @@ def run_remove_trailing_char(arg_set):
             continue
 
         # Unzip the original file
-        with zipfile.ZipFile(original_file_path, 'r') as zip:
+        with zipfile.ZipFile(original_file_path, 'r') as my_zip_file:
             files_to_remove.append(original_unzipped_file_path)
             try:
-                zip.extractall(os.path.dirname(original_file_path))
+                my_zip_file.extractall(os.path.dirname(original_file_path))
             except:
                 print("{} FAIL - unable to unzip".format(original_file_path))
                 cleanup_temp_files(files_to_remove)
@@ -178,7 +178,8 @@ def run_remove_trailing_char(arg_set):
             revert_orig_file(original_file_path)
             continue
 
-        if not remove_trailing_char(arg_set['trailing_char'], f"{original_unzipped_file_path}.orig", original_unzipped_file_path):
+        if not remove_trailing_char(arg_set['trailing_char'], f"{original_unzipped_file_path}.orig",
+                                    original_unzipped_file_path):
             print("{} FAIL - cleanup error".format(original_file_path))
             cleanup_temp_files(files_to_remove)
             revert_orig_file(original_file_path)
@@ -197,8 +198,8 @@ def run_remove_trailing_char(arg_set):
             continue
 
         try:
-            with zipfile.ZipFile(os.path.basename(original_file_path), 'w', compression = zipfile.ZIP_DEFLATED) as zip:
-                zip.write(os.path.basename(original_unzipped_file_path))
+            with zipfile.ZipFile(os.path.basename(original_file_path), 'w', compression=zipfile.ZIP_DEFLATED) as my_zip_file:
+                my_zip_file.write(os.path.basename(original_unzipped_file_path))
         except:
             print("{} FAIL - unable to zip new file".format(original_file_path))
             os.chdir(curr_path)
@@ -209,7 +210,8 @@ def run_remove_trailing_char(arg_set):
             os.chdir(curr_path)
         except:
             # NOTE: If chdir back to original dir fails then we have a critical error and should abort
-            print("{} FAIL - CRITICAL ERROR, unable to chdir to {} the previous path.  Aborting.  No cleanup.".format(original_file_path, curr_path))
+            print("{} FAIL - CRITICAL ERROR, unable to chdir to {} the previous path.  Aborting.  No cleanup.".format(
+                original_file_path, curr_path))
             exit(0)
 
         cleanup_temp_files(files_to_remove)  # Do not revert orig file as new file is now in place
@@ -280,10 +282,10 @@ def add_field_to_name(arg_set):
             continue
 
         # Unzip the original file
-        with zipfile.ZipFile(original_file_path, 'r') as zip:
+        with zipfile.ZipFile(original_file_path, 'r') as my_zip_file:
             files_to_remove.append(original_unzipped_file_path)
             try:
-                zip.extractall(os.path.dirname(original_file_path))
+                my_zip_file.extractall(os.path.dirname(original_file_path))
             except:
                 print("{} FAIL - unable to unzip original file".format(original_file_path))
                 cleanup_temp_files(files_to_remove)
@@ -291,23 +293,17 @@ def add_field_to_name(arg_set):
 
         # Rename original zip file to save in case need to revert
         # Rename extracted file to new file name
-        files_to_remove.append(f"{original_unzipped_file_path}.orig")
+        files_to_remove.append(new_unzipped_file_path)
         try:
             os.rename(original_file_path, f"{original_file_path}.orig")
-            os.rename(original_unzipped_file_path, f"{original_unzipped_file_path}.orig")
+            os.rename(original_unzipped_file_path, new_unzipped_file_path)
         except:
-            print("{} FAIL - unable to rename original files".format(original_file_path))
+            print("{} FAIL - unable to rename original file or rename new file".format(original_file_path))
             cleanup_temp_files(files_to_remove)
             revert_orig_file(original_file_path)
             continue
 
-        if not remove_trailing_char(arg_set['trailing_char'], f"{original_unzipped_file_path}.orig", original_unzipped_file_path):
-            print("{} FAIL - cleanup error".format(original_file_path))
-            cleanup_temp_files(files_to_remove)
-            revert_orig_file(original_file_path)
-            continue
-
-        # Zip new file and remove temp files (both new and original but leave original zip)
+        # Zip new file and remove temp files
         # NOTE:  Need to chdir to path of zip file otherwise new zip file doesn't contain just the file it contains the
         #       full path to the file inside the zip (not desired).
         curr_path = os.path.abspath(".")
@@ -320,8 +316,8 @@ def add_field_to_name(arg_set):
             continue
 
         try:
-            with zipfile.ZipFile(os.path.basename(original_file_path), 'w', compression = zipfile.ZIP_DEFLATED) as zip:
-                zip.write(os.path.basename(original_unzipped_file_path))
+            with zipfile.ZipFile(os.path.basename(new_file_path), 'w', compression=zipfile.ZIP_DEFLATED) as my_zip_file:
+                my_zip_file.write(os.path.basename(new_unzipped_file_path))
         except:
             print("{} FAIL - unable to zip new file".format(original_file_path))
             os.chdir(curr_path)
@@ -332,13 +328,15 @@ def add_field_to_name(arg_set):
             os.chdir(curr_path)
         except:
             # NOTE: If chdir back to original dir fails then we have a critical error and should abort
-            print("{} FAIL - CRITICAL ERROR, unable to chdir to {} the previous path.  Aborting.  No cleanup.".format(original_file_path, curr_path))
+            print("{} FAIL - CRITICAL ERROR, unable to chdir to {} the previous path.  Aborting.  No cleanup.".format(
+                original_file_path, curr_path))
             exit(0)
 
         cleanup_temp_files(files_to_remove)  # Do not revert orig file as new file is now in place
         print("{} PASS".format(original_file_path))
 
     return 0
+
 
 def main_function():
     arg_set = get_sys_args()

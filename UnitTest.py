@@ -33,9 +33,11 @@ result = my_call_python("DePipeInator.py BHTN RETRO 01D \"\" 20190831 20190903 -
 # print(f"'{expected}'")
 # print(f"'{result}'")
 my_tdd(result, expected, test)
-exit(0)
+
 test = "RENAME FILE"
-expected = "n/a"
+expected = "./BHTN/20190831/20190831.BHTN.PMTS01D.TXT.zip FAIL - missing original " \
+           "file\n./BHTN/20190901/20190901.BHTN.PMTS01D.TXT.zip PASS\n./BHTN/20190902/20190902.BHTN.PMTS01D.TXT.zip " \
+           "FAIL - missing original file\n./BHTN/20190903/20190903.BHTN.PMTS01D.TXT.zip FAIL - missing original file"
 result = my_call_python("DePipeInator.py BHTN PMTS 01D TXT 20190831 20190903 -a HIST 2")
 # print(f"'{expected}'")
 # print(f"'{result}'")
