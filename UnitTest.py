@@ -1,4 +1,4 @@
-from my_helper import *
+from my_helper import my_tdd, my_call_python
 import os
 
 # Check usage
