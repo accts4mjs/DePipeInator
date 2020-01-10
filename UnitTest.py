@@ -16,7 +16,7 @@ expected = ("ERROR: unexpected # of args\n" +
             "\tEx:  DePipeInator BHTN COLLECT 01D 20190901 20190903 -u" +
             "\tEx:  DePipeInator BHTN PMTS 01D 20190901 20190903 -a HIST 3")
 result = my_call_python("DePipeInator.py")
-test_passed = my_tdd(result, expected, test)
+my_tdd(result, expected, test)
 
 test = "REMOVE '|' CHAR"
 expected = "./BHTN/20190831/20190831.BHTN.RETRO01D.zip FAIL - missing " \
@@ -25,7 +25,7 @@ expected = "./BHTN/20190831/20190831.BHTN.RETRO01D.zip FAIL - missing " \
 result = my_call_python("DePipeInator.py BHTN RETRO 01D \"\" 20190831 20190903 -r |")
 # print(f"'{expected}'")
 # print(f"'{result}'")
-test_passed = my_tdd(result, expected, test)
+my_tdd(result, expected, test)
 
 test = "UNDO"
 expected = "./BHTN/20190831/20190831.BHTN.RETRO01D.zip FAIL - missing .orig " \
@@ -34,7 +34,7 @@ expected = "./BHTN/20190831/20190831.BHTN.RETRO01D.zip FAIL - missing .orig " \
 result = my_call_python("DePipeInator.py BHTN RETRO 01D \"\" 20190831 20190903 -u")
 # print(f"'{expected}'")
 # print(f"'{result}'")
-test_passed = my_tdd(result, expected, test)
+my_tdd(result, expected, test)
 
 test = "RENAME FILE"
 expected = "./BHTN/20190831/20190831.BHTN.PMTS01D.TXT.zip FAIL - missing original " \
